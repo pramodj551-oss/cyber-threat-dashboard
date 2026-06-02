@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cyber Threat Intelligence Dashboard | Pramod Jadhav</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<style>
+:root{
+  --bg:#080c10;--bg2:#0d1219;--green:#00e5a0;--green2:#00b87a;
+  --text:#e2e8f0;--muted:#64748b;--border:rgba(0,229,160,0.12);
+  --card:rgba(255,255,255,0.03);--red:#e24b4a;--amber:#ba7517;
+  --blue:#378add;--purple:#534ab7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--green2);border-radius:2px}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;padding:14px 5%;display:flex;justify-content:space-between;align-items:center;background:rgba(8,12,16,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--green)}
+.nav-sub{font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace}
+.live-pill{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--green);background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);padding:4px 12px;border-radius:100px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* LAYOUT */
+.container{padding:24px 5%}
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.page-title{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text)}
+.btn{font-family:'DM Mono',monospace;font-size:0.75rem;padding:7px 16px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s}
+.btn:hover{border-color:var(--green);color:var(--green)}
+.btn.active{background:var(--green);color:#000;border-color:var(--green)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.mcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.mcard-label{font-size:0.72rem;color:var(--muted);margin-bottom:6px;font-family:'DM Mono',monospace}
+.mcard-val{font-size:1.8rem;font-weight:500;font-family:'DM Mono',monospace}
+.mcard-val.red{color:var(--red)}
+.mcard-val.amber{color:#f59e0b}
+.mcard-val.green{color:var(--green)}
+.mcard-delta{font-size:0.7rem;color:var(--muted);margin-top:4px}
+
+/* CARDS */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.card-full{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.card-title{font-size:0.82rem;font-weight:500;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:7px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.05em}
+.card-title i{color:var(--green);font-size:14px}
+
+/* CHART */
+.chart-wrap{position:relative;width:100%;height:180px}
+
+/* THREAT FEED */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filter-btn{font-size:0.7rem;padding:3px 10px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.2s}
+.filter-btn.active{background:var(--green);color:#000;border-color:var(--green)}
+.threat-list{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto}
+.threat-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center;font-size:0.75rem;padding:7px 10px;border-radius:7px;border:1px solid var(--border);border-left-width:3px}
+.threat-row.critical{border-left-color:var(--red)}
+.threat-row.high{border-left-color:#f59e0b}
+.threat-row.medium{border-left-color:var(--blue)}
+.threat-row.low{border-left-color:var(--green)}
+.badge{font-size:0.65rem;padding:2px 7px;border-radius:4px;font-weight:600;font-family:'DM Mono',monospace}
+.badge.critical{background:rgba(226,75,74,0.15);color:var(--red)}
+.badge.high{background:rgba(245,158,11,0.12);color:#f59e0b}
+.badge.medium{background:rgba(55,138,221,0.12);color:var(--blue)}
+.badge.low{background:rgba(0,229,160,0.1);color:var(--green)}
+.threat-ip{font-family:'DM Mono',monospace;color:var(--text)}
+.threat-type{color:var(--muted)}
+.threat-time{font-size:0.68rem;color:var(--muted);text-align:right}
+
+/* IP TABLE */
+table{width:100%;border-collapse:collapse;font-size:0.78rem}
+th{text-align:left;color:var(--muted);font-weight:400;padding:4px 6px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.7rem}
+td{padding:6px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text)}
+tr:last-child td{border-bottom:none}
+.rep-bar-wrap{width:60px;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;display:inline-block}
+.rep-bar{height:100%;border-radius:3px}
+
+/* ATTACK TYPES */
+.attack-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.attack-item{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:12px}
+.attack-name{font-size:0.72rem;color:var(--muted);margin-bottom:4px}
+.attack-count{font-size:1.4rem;font-weight:500;font-family:'DM Mono',monospace}
+.attack-bar-wrap{height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:8px}
+.attack-bar{height:100%;border-radius:2px;transition:width 0.5s}
+
+/* MAP */
+.map-wrap{background:rgba(0,229,160,0.02);border-radius:8px;overflow:hidden;position:relative}
+.map-svg{width:100%;display:block}
+.map-tooltip{position:absolute;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.72rem;color:var(--text);pointer-events:none;display:none;white-space:nowrap;z-index:10}
+
+/* FOOTER */
+footer{text-align:center;padding:24px 5%;border-top:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)}
+footer a{color:var(--green);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div>
+    <div class="nav-brand">PRAMOD JADHAV — CTI Dashboard</div>
+    <div class="nav-sub">Cyber Threat Intelligence · Network Anomaly Detection</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="live-pill"><div class="live-dot"></div>LIVE SIMULATION</div>
+    <button class="btn" id="simBtn" onclick="toggleSim()"><i class="ti ti-player-pause" id="simIcon"></i><span id="simLabel">Pause</span></button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="top-bar">
+    <div class="page-title">Network Threat Intelligence Dashboard</div>
+    <div style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)" id="clockDisplay"></div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="mcard"><div class="mcard-label">Total Events</div><div class="mcard-val" id="m-total">0</div><div class="mcard-delta">last session</div></div>
+    <div class="mcard"><div class="mcard-label">Critical Alerts</div><div class="mcard-val red" id="m-crit">0</div><div class="mcard-delta">immediate action needed</div></div>
+    <div class="mcard"><div class="mcard-label">Blocked IPs</div><div class="mcard-val amber" id="m-blocked">0</div><div class="mcard-delta">auto-quarantined</div></div>
+    <div class="mcard"><div class="mcard-label">Network Health</div><div class="mcard-val green" id="m-health">100%</div><div class="mcard-delta">overall score</div></div>
+    <div class="mcard"><div class="mcard-label">Packets/sec</div><div class="mcard-val" id="m-pps">0</div><div class="mcard-delta">current throughput</div></div>
+  </div>
+
+  <!-- TRAFFIC CHART -->
+  <div class="card-full">
+    <div class="card-title"><i class="ti ti-activity"></i>Network traffic — packets/sec (normal vs malicious)</div>
+    <div style="display:flex;gap:16px;margin-bottom:10px;font-size:0.72rem;color:var(--muted)">
+      <span><span style="display:inline-block;width:10px;height:3px;background:#378add;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Normal</span>
+      <span><span style="display:inline-block;width:10px;height:3px;background:#e24b4a;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Malicious</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="trafficChart" role="img" aria-label="Live network traffic chart showing normal and malicious packets over time">Live traffic data loading...</canvas>
+    </div>
+  </div>
+
+  <!-- MAP + ATTACK TYPES -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-world"></i>Attack origin map</div>
+      <div class="map-wrap" style="position:relative">
+        <div class="map-tooltip" id="mapTip"></div>
+        <svg class="map-svg" viewBox="0 0 420 200" id="worldMap"></svg>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-bar"></i>Attack type classifier</div>
+      <div class="attack-grid" id="attackGrid"></div>
+    </div>
+  </div>
+
+  <!-- THREAT FEED + IP REPUTATION -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-alert-triangle"></i>Live threat feed</div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('critical',this)">Critical</button>
+        <button class="filter-btn" onclick="setFilter('high',this)">High</button>
+        <button class="filter-btn" onclick="setFilter('medium',this)">Medium</button>
+        <button class="filter-btn" onclick="setFilter('low',this)">Low</button>
+      </div>
+      <div class="threat-list" id="threatList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-shield-check"></i>IP reputation check</div>
+      <table>
+        <tr><th>IP Address</th><th>Origin</th><th>Rep. Score</th><th>Status</th></tr>
+        <tbody id="ipTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Built by <a href="https://pramodjadhav.vercel.app">Pramod Prakash Jadhav</a> · AI & ML Essentials · IIT Patna (Vishlesan i-Hub) ·
+  <a href="https://github.com/pramodj551-oss">github.com/pramodj551-oss</a>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const ATTACKS=[
+  {name:'SQL Injection',color:'#e24b4a',count:0},
+  {name:'Brute Force',color:'#f59e0b',count:0},
+  {name:'DDoS',color:'#534ab7',count:0},
+  {name:'Port Scan',color:'#378add',count:0},
+  {name:'Phishing',color:'#993556',count:0},
+  {name:'Malware C2',color:'#1d9e75',count:0}
+];
+const SEVERITIES=['critical','high','medium','low'];
+const SEV_COLORS={critical:'#e24b4a',high:'#f59e0b',medium:'#378add',low:'#1d9e75'};
+const COUNTRIES=[
+  {n:'Russia',x:310,y:55,c:'RU'},{n:'China',x:350,y:75,c:'CN'},
+  {n:'USA',x:80,y:75,c:'US'},{n:'Brazil',x:130,y:130,c:'BR'},
+  {n:'Germany',x:255,y:57,c:'DE'},{n:'India',x:330,y:95,c:'IN'},
+  {n:'Iran',x:305,y:78,c:'IR'},{n:'Nigeria',x:245,y:115,c:'NG'},
+  {n:'Ukraine',x:285,y:58,c:'UA'},{n:'N.Korea',x:370,y:65,c:'KP'}
+];
+const IPS=[
+  {ip:'192.168.1.105',country:'RU',score:9},{ip:'45.33.32.156',country:'CN',score:12},
+  {ip:'198.51.100.14',country:'US',score:78},{ip:'203.0.113.45',country:'IR',score:6},
+  {ip:'104.21.56.78',country:'DE',score:88},{ip:'91.108.4.230',country:'KP',score:4},
+  {ip:'172.16.0.99',country:'UA',score:18},{ip:'185.220.101.5',country:'NG',score:11}
+];
+
+let threats=[],threatFilter='all',simRunning=true;
+let totalEvents=0,critCount=0,blockedCount=0;
+let tLabels=[],normalD=[],malD=[];
+
+function ri(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rp(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function ft(d){return d.toTimeString().slice(0,8)}
+
+function tick(){
+  setInterval(()=>{
+    const n=new Date();
+    document.getElementById('clockDisplay').textContent=n.toLocaleString('en-IN',{hour12:false});
+  },1000);
+}
+
+const ctx=document.getElementById('trafficChart').getContext('2d');
+const trafficChart=new Chart(ctx,{
+  type:'line',
+  data:{labels:tLabels,datasets:[
+    {label:'Normal',data:normalD,borderColor:'#378add',backgroundColor:'rgba(55,138,221,0.06)',tension:0.4,pointRadius:0,borderWidth:1.5,fill:true},
+    {label:'Malicious',data:malD,borderColor:'#e24b4a',backgroundColor:'rgba(226,75,74,0.06)',tension:0.4,pointRadius:0,borderWidth:1.5,fill:true}
+  ]},
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    animation:{duration:250},
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#64748b',font:{size:10},maxTicksLimit:8},grid:{color:'rgba(100,116,139,0.1)'}},
+      y:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'rgba(100,116,139,0.1)'},min:0}
+    }
+  }
+});
+
+function addTrafficPt(){
+  const n=ri(180,650),m=ri(0,100);
+  tLabels.push(ft(new Date()));normalD.push(n);malD.push(m);
+  if(tLabels.length>30){tLabels.shift();normalD.shift();malD.shift()}
+  trafficChart.update('none');
+  document.getElementById('m-pps').textContent=n+m;
+}
+
+function genThreat(){
+  const r=Math.random();
+  const sev=r<0.12?'critical':r<0.35?'high':r<0.65?'medium':'low';
+  const atk=rp(ATTACKS);
+  const src=rp(COUNTRIES);
+  const ipObj=IPS[ri(0,IPS.length-1)];
+  const t={id:Date.now()+Math.random(),sev,type:atk.name,ip:ipObj.ip,src:src.n,time:new Date(),x:src.x,y:src.y};
+  threats.unshift(t);if(threats.length>60)threats.pop();
+  atk.count++;totalEvents++;
+  if(sev==='critical'){critCount++;if(Math.random()<0.65)blockedCount++}
+  else if(sev==='high'&&Math.random()<0.2)blockedCount++;
+  updateMetrics();renderThreats();renderAttacks();addDot(t);
+}
+
+function updateMetrics(){
+  document.getElementById('m-total').textContent=totalEvents;
+  document.getElementById('m-crit').textContent=critCount;
+  document.getElementById('m-blocked').textContent=blockedCount;
+  const h=Math.max(55,100-Math.round((critCount/Math.max(1,totalEvents))*150));
+  const el=document.getElementById('m-health');
+  el.textContent=h+'%';
+  el.className='mcard-val '+(h>80?'green':h>60?'amber':'red');
+}
+
+function renderThreats(){
+  const f=threatFilter==='all'?threats:threats.filter(t=>t.sev===threatFilter);
+  document.getElementById('threatList').innerHTML=f.slice(0,18).map(t=>`
+    <div class="threat-row ${t.sev}">
+      <span class="badge ${t.sev}">${t.sev.toUpperCase()}</span>
+      <span class="threat-ip">${t.ip}</span>
+      <span class="threat-type">${t.type}</span>
+      <span class="threat-time">${ft(t.time)}</span>
+    </div>`).join('');
+}
+
+function renderAttacks(){
+  const mx=Math.max(1,...ATTACKS.map(a=>a.count));
+  document.getElementById('attackGrid').innerHTML=ATTACKS.map(a=>`
+    <div class="attack-item">
+      <div class="attack-name">${a.name}</div>
+      <div class="attack-count" style="color:${a.color}">${a.count}</div>
+      <div class="attack-bar-wrap"><div class="attack-bar" style="width:${Math.round(a.count/mx*100)}%;background:${a.color}"></div></div>
+    </div>`).join('');
+}
+
+function renderIPTable(){
+  document.getElementById('ipTable').innerHTML=IPS.map(r=>{
+    const col=r.score>60?'#1d9e75':r.score>25?'#f59e0b':'#e24b4a';
+    const status=r.score>60?'Clean':r.score>25?'Suspicious':'Malicious';
+    return`<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:0.7rem">${r.ip}</td>
+      <td>${r.country}</td>
+      <td><div class="rep-bar-wrap"><div class="rep-bar" style="width:${r.score}%;background:${col}"></div></div>&nbsp;<span style="font-size:0.68rem;color:${col}">${r.score}</span></td>
+      <td style="color:${col};font-size:0.72rem;font-weight:500">${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildMap(){
+  const svg=document.getElementById('worldMap');
+  const tip=document.getElementById('mapTip');
+  const landPaths=[
+    'M50,40 L160,38 L175,55 L180,85 L170,115 L150,130 L120,128 L95,115 L70,95 L48,70 Z',
+    'M165,35 L280,33 L300,50 L305,75 L295,90 L265,100 L235,98 L210,85 L185,65 L163,48 Z',
+    'M230,98 L300,95 L315,112 L312,135 L290,148 L260,142 L240,125 Z',
+    'M308,32 L415,30 L418,55 L412,80 L395,100 L365,110 L335,105 L312,85 L305,58 Z',
+    'M355,108 L410,105 L415,125 L405,148 L375,155 L350,140 L345,120 Z'
+  ];
+  landPaths.forEach(d=>{
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',d);
+    p.setAttribute('fill','rgba(0,229,160,0.06)');
+    p.setAttribute('stroke','rgba(0,229,160,0.2)');
+    p.setAttribute('stroke-width','0.5');
+    svg.appendChild(p);
+  });
+  COUNTRIES.forEach(c=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',c.x);circle.setAttribute('cy',c.y);circle.setAttribute('r','3');
+    circle.setAttribute('fill','rgba(55,138,221,0.5)');
+    circle.setAttribute('stroke','#378add');circle.setAttribute('stroke-width','0.5');
+    const label=document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x',c.x+5);label.setAttribute('y',c.y+3);
+    label.setAttribute('font-size','7');label.setAttribute('fill','rgba(100,116,139,0.9)');
+    label.setAttribute('font-family','DM Mono,monospace');
+    label.textContent=c.c;
+    g.appendChild(circle);g.appendChild(label);svg.appendChild(g);
+    circle.addEventListener('mouseenter',e=>{
+      tip.style.display='block';tip.textContent=c.n;
+      tip.style.left=(c.x+8)+'px';tip.style.top=(c.y-8)+'px';
+    });
+    circle.addEventListener('mouseleave',()=>{tip.style.display='none'});
+  });
+}
+
+let dotEls=[];
+function addDot(t){
+  const svg=document.getElementById('worldMap');
+  const tip=document.getElementById('mapTip');
+  const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  const jx=t.x+ri(-8,8),jy=t.y+ri(-6,6);
+  dot.setAttribute('cx',jx);dot.setAttribute('cy',jy);dot.setAttribute('r','4');
+  dot.setAttribute('fill',SEV_COLORS[t.sev]);dot.setAttribute('opacity','0.85');
+  dot.style.cursor='pointer';
+  dot.addEventListener('mouseenter',()=>{
+    tip.style.display='block';
+    tip.innerHTML=`${t.type} · ${t.ip}<br>${t.src} · ${t.sev.toUpperCase()}`;
+    tip.style.left=(jx+8)+'px';tip.style.top=(jy-8)+'px';
+  });
+  dot.addEventListener('mouseleave',()=>{tip.style.display='none'});
+  svg.appendChild(dot);dotEls.push(dot);
+  setTimeout(()=>{dot.setAttribute('r','7');dot.setAttribute('opacity','0.3')},300);
+  setTimeout(()=>{if(dot.parentNode)dot.parentNode.removeChild(dot);},1500);
+  if(dotEls.length>50){const old=dotEls.shift();if(old&&old.parentNode)old.parentNode.removeChild(old)}
+}
+
+function setFilter(f,btn){
+  threatFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderThreats();
+}
+
+function toggleSim(){
+  simRunning=!simRunning;
+  document.getElementById('simIcon').className='ti ti-'+(simRunning?'player-pause':'player-play');
+  document.getElementById('simLabel').textContent=simRunning?'Pause':'Resume';
+}
+
+// Init
+buildMap();renderIPTable();renderAttacks();tick();
+for(let i=0;i<10;i++){tLabels.push('');normalD.push(ri(200,500));malD.push(ri(5,50))}
+trafficChart.update();
+
+setInterval(()=>{if(simRunning)genThreat();},1600);
+setInterval(()=>{if(simRunning)addTrafficPt();},2000);
+setInterval(()=>{if(simRunning){IPS.forEach(r=>{r.score=Math.max(1,Math.min(99,r.score+ri(-3,3)))});renderIPTable();}},5000);
+</script>
+</body>
+</html>
